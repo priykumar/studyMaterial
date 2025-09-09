@@ -207,3 +207,114 @@ kubectl api-resources --namespaced=false
 - Cross-namespace communication requires FQDN: service.namespace.svc.cluster.local
 - Deleting a namespace deletes everything inside it!
 
+---
+---
+
+## 🟢 Pod
+> The smallest deployable unit in Kubernetes
+
+A Pod is a group of one or more containers with shared storage, network resources, and a specification for how to run them
+- 📦 **Smallest K8S Unit** - You don't work directly with containers
+- 🛡️ **Container Wrapper** - Abstracts away container runtime (Docker, etc.)
+- 🎪 **Single Application** - One main app per pod (best practice)
+- 🌐 **Shared Network** - All containers share the same IP and storage
+- ⚡ **Ephemeral Nature** - Pods die easily and get replaced frequently
+
+### 🎛️ Workload Resources that manage Pods
+- 🚀 **Deployments** - Stateless applications
+- 📊 **ReplicaSets** - Maintain pod replicas
+- 🏢 **StatefulSets** - Stateful applications
+- ⏰ **Jobs** - Run-to-completion tasks
+- 🔄 **DaemonSets** - One pod per node
+
+### 🌐 Pod Networking & Communication
+- 🏠 **Within a Pod**
+```
+# Containers share localhost and storage volumes
+curl localhost:8080  # Container A talking to Container B
+```
+- 🌍 **Between Pods**
+```
+# Each Pod gets unique IP address
+Pod-A (IP: 10.244.1.5) → Pod-B (IP: 10.244.1.8)
+```
+* ⚠️ **The Ephemeral Problem**
+```
+Pod-A → Pod-B (10.244.1.8) ✅ Working
+Pod-B crashes and restarts...
+Pod-A → Pod-B (10.244.1.12) ❌ Broken! (New IP)
+
+Solution: Services - Services provide stable endpoints for ephemeral pods!
+```
+
+### 🔄 Pod Lifecycle & States
+
+| Phase          | Status   | What's Happening                                      |
+|----------------|----------|-------------------------------------------------------|
+| ⏳ Pending     | Starting | Accepted by cluster, waiting to run                   |
+| 🟢 Running     | Active   | Bound to node, containers running                     |
+| ✅ Succeeded   | Complete | All containers terminated successfully                |
+| ❌ Failed      | Error    | Containers terminated with errors                     |
+
+### 🔄 Restart Policies & Crash Handling
+#### 🎛️ Restart Policies:
+```
+  restartPolicy: Always           # Default - always restart
+  # restartPolicy: OnFailure      # Restart only on failure
+  # restartPolicy: Never          # Never restart
+```
+#### 🔄 Crash Recovery Flow:
+- 💥 Initial Crash → Immediate restart attempt
+- 🔄 Repeated Crashes → Exponential backoff delay
+- 😵 CrashLoopBackOff → Pod stuck in restart loop
+- ⏰ Backoff Reset → After 10min success, reset delay
+
+### 📦 Pod-related Kubernetes Commands
+#### 🔍 View Pods:
+```
+kubectl get pods
+kubectl get pods -o wide            # show more details (node, IP, etc.)
+kubectl get pod <pod-name> -n <ns>  # view pod in specific namespace
+```
+#### 📖 Describe Pods:
+```
+kubectl describe pod <pod-name>
+```
+#### 📜 Logs
+```
+kubectl logs <pod-name>
+kubectl logs -f <pod-name>                      # stream logs
+kubectl logs <pod-name> -c <container-name>     # logs for a specific container
+```
+#### 🚪 Exec into a Pod
+```
+kubectl exec -it <pod-name> -- /bin/bash   # or sh
+kubectl exec -it <pod-name> -c <container-name> -- /bin/bash
+```
+#### 🛠️ Debugging
+````
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl describe pod <pod-name>       # check pod conditions and events
+kubectl exec -it <pod-name> -- env    # check env vars inside pod
+````
+#### 📝 Create Pods
+````
+kubectl run nginx --image=nginx
+kubectl run mypod --image=busybox --restart=Never --command -- sleep 3600
+````
+#### 🗑️ Delete Pods
+````
+kubectl delete pod <pod-name>
+kubectl delete pod <pod-name> -n <namespace>
+kubectl delete pods --all             # delete all pods in current namespace
+````
+#### 🚦 Scale Pods (via Deployment)
+````
+kubectl scale deployment <deployment-name> --replicas=5
+````
+
+## ⚡ Static Pods
+> Static Pods are a special type of Pod that are managed directly by the kubelet rather than the control plane. Static Pods are automatically created when the kubelet starts and are deleted when the kubelet shuts down. These Pods are not created or managed through the Kubernetes API server, but instead are defined by placing a Pod specification file on a node’s filesystem (/etc/kubernetes/manifests/)
+
+
+
