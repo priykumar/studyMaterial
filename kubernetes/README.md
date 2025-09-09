@@ -156,6 +156,7 @@ Every operation, communication, and state change happens through this unified in
 ```👤 You → 🛠️ kubectl/CLI → 🚪 API Server → 📚 etcd + ⚙️ controllers/workers```
 
 ---
+---
 
 ## 📂 Namespace
 > Virtual folders for your cluster - Keep your resources organized and isolated!
@@ -192,8 +193,17 @@ kubectl config set-context --current --namespace=my-team
 # 🗑️ Delete namespace (⚠️ Deletes ALL resources inside!)
 kubectl delete namespace my-team
 ```
+**Namespace Scope**
+```
+# 📦 Resources lives inside namespaces
+kubectl api-resources --namespaced=true
 
+# Resources global to entire cluster
+kubectl api-resources --namespaced=false
+```
 
-Not all objects are in a namespace, like nodes, PVs. To see which K8S resources are and aint in namespace
-* In a namespace: kubectl api-resources --namespaced=true
-* Not in a namespace: kubectl api-resources --namespaced=false
+### ⚠️ Notes
+- Resources in same namespace can reference each other directly
+- Cross-namespace communication requires FQDN: service.namespace.svc.cluster.local
+- Deleting a namespace deletes everything inside it!
+
