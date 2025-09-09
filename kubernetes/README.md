@@ -316,5 +316,147 @@ kubectl scale deployment <deployment-name> --replicas=5
 ## ⚡ Static Pods
 > Static Pods are a special type of Pod that are managed directly by the kubelet rather than the control plane. Static Pods are automatically created when the kubelet starts and are deleted when the kubelet shuts down. These Pods are not created or managed through the Kubernetes API server, but instead are defined by placing a Pod specification file on a node’s filesystem (/etc/kubernetes/manifests/)
 
+---
+---
+
+## ⚖️ Services
+>Stable networking for ephemeral pods - The solution to the IP address chaos!
+
+A Service is an abstract way to expose applications running on a set of pods. It provides a single DNS name and load balances traffic across healthy pods   
+
+### 🔗 Key Benefits:
+- 📌 Permanent IP - Attaches stable IP to pods
+- 🔄 Independent Lifecycle - Service survives pod deaths
+- 🌐 Pod-to-Pod Communication - Pods talk through services
+- ⚖️ Load Balancing - Distributes requests to least busy pods
+
+**Problem → Solution**:
+```
+❌ Pod-A → Pod-B (10.244.1.8) → Pod-B dies → New Pod-B (10.244.1.12) → ❌ Broken!
+✅ Pod-A → Service-B (stable DNS) → Any healthy Pod-B → ✅ Always works!
+```
+
+### 🔧 Service Types
+#### 1. 🏠 ClusterIP
+- Default service
+- Visibility is internal-only that means used only for inter-pod communication
+- It's not possible to use clusterIP service to reach a micro-service from the internet from outside the cluster
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: ClusterIP  # Default - can be omitted
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: backend-app
+```
+
+#### 2. 🚪 NodePort
+- Visibility is internal and external to the cluster
+- To use this, nodes must have public IP addresses
+- Port must be in the range between 30000 and 32767 and if not provided then Kubernetes will assign it randomly
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+spec:
+  type: NodePort
+  ports:
+  - port: 80                # Internal cluster port
+    targetPort: 8080        # Pod container port  
+    nodePort: 30000         # External node port (30000-32767)
+  selector:
+    app: web-app
+```
+##### Traffic Journey:
+- 👤 Client → http://node-ip:30000
+- 🖥️ Node → forwards to Service:80
+- ⚖️ Service → selects healthy Pod:8080
+- 🟢 Pod → processes request
+- 📤 Response travels back the same path
+- _❌ No pods listening on 8080 → "Connection Refused"_
+- _❌ No pods behind service → "Connection Timeout"_
+
+
+#### 3. ☁️ LoadBalancer
+- Visibility is external to the cluster
+- K8S provision a logical LB and assign a public IP address to it so that external user access service through this LB IP
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: production-web
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: web-app
+```
+
+| Type          | Visibility             | IP Access               |
+|---------------|------------------------|-------------------------|
+| 🏠 ClusterIP  | Internal only          | Cluster internal IP     |
+| 🚪 NodePort   | Internal + External    | Node IP + Port          |
+| ☁️ LoadBalancer | External             | Public cloud LB IP      |
+
+### 📦 Service-related Kubernetes Commands
+#### 🔍 View Services:
+```
+kubectl get svc
+kubectl get svc -o wide                   # show cluster IP, external IP, ports
+kubectl get svc <service-name> -n <ns>    # view service in a namespace
+```
+#### 📖 Describe Service:
+```
+kubectl describe svc <service-name>
+```
+#### 📝 Create Services:
+```
+kubectl expose pod nginx --port=80 --target-port=80
+kubectl expose deployment myapp --type=NodePort --port=80
+```
+#### 🌐 Access Services:
+```
+kubectl get endpoints <service-name>    # see which Pods are behind the Service
+kubectl port-forward svc/myservice 8080:80
+```
+#### 🗑️ Delete Services:
+```
+kubectl delete svc <service-name>
+kubectl delete svc --all
+```
+
+### 🌐 Service Discovery & DNS
+> When you create a service, Kubernetes automatically creates a DNS entry: ```<service-name>.<namespace-name>.svc.cluster.local```
+
+#### 🏠 Same Namespace Access
+```
+# From any pod in the same namespace
+curl -v http://my-svc:7780                    # DNS name
+curl -v http://<my-svc-ClusterIP>:7780        # Direct IP
+```
+#### 🌍 Cross-Namespace Access
+```
+# From pod in different namespace to service in 'dummyns'
+curl -v http://my-svc.dummyns.svc.cluster.local:7780  # FQDN
+curl -v http://<dummyns-my-svc-ClusterIP>:7780        # Direct IP
+```
+#### 🖥️ External Cluster Access
+```
+# From outside the cluster - ClusterIP is NOT accessible!
+# ❌ curl -v http://<my-svc-ClusterIP>:7780  # This won't work!
+
+# ✅ Use NodePort or LoadBalancer services instead:
+curl -v http://<node-ip>:30000               # NodePort
+curl -v http://<loadbalancer-ip>:80          # LoadBalancer
+```
+
 
 
