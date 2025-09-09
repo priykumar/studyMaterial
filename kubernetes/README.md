@@ -458,5 +458,71 @@ curl -v http://<node-ip>:30000               # NodePort
 curl -v http://<loadbalancer-ip>:80          # LoadBalancer
 ```
 
+## 🔄 Replication Controller
+> Maintains desired pod count - Your app's reliability guardian! 🛡️
 
+A Replication Controller (RC) ensures a specified number of Pod replicas are running at any given time
+- Continuous Monitoring:
+    * 📉 Pod goes down → RC creates a new one
+    * 📈 Too many pods → RC deletes extras
+    * 🎯 Perfect balance → Maintains desired replica count
+ 
+### 📝 Replication Controller Manifest
+```
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: web-app-rc
+  labels:
+    app: web-app
+spec:
+  replicas: 3                        # 🎯 Desired number of pods
+  selector:                          # 🏷️ How to find managed pods
+    app: web-app
+  template:                          # 📋 Pod template for new pods
+    metadata:
+      labels:
+        app: web-app                 # 🏷️ Must match selector
+    spec:
+      containers:
+      - name: web-container
+        image: nginx:1.20
+        ports:
+        - containerPort: 80
+```
 
+#### 🏷️ The Significance of Selector in RC
+It's how the RC identifies which pods it should manage. Changing RC template doesn't update existing pods
+- 🔍 Scan: RC continuously scans all pods in namespace
+- 🏷️ Match: Finds pods where ALL selector labels match
+- 📊 Count: Compares found pods vs desired replicas
+- ⚖️ Action: Creates/deletes pods to match desired count
+
+### 📦 ReplicationController (RC) Commands
+#### 📝 Create RC
+```
+kubectl create -f rc.yaml
+```
+
+#### 🔍 View RCs
+```
+kubectl get rc
+kubectl get rc -o wide
+kubectl get rc -n <namespace>
+```
+
+#### 📖 Describe RC
+```
+kubectl describe rc <rc-name>
+```
+
+#### 📊 Scale RC
+```
+kubectl scale rc <rc-name> --replicas=5
+```
+
+🗑️ Delete RC
+```
+kubectl delete rc <rc-name>
+kubectl delete rc --all
+```
