@@ -573,3 +573,14 @@ spec:
 3. 🆕 Deployment creates RS2 (new version)
 4. ⚖️ Gradually: Scale down RS1, scale up RS2
 5. 💾 RS1 stays (scaled to 0) for rollback
+
+## 🔄 DaemonSet
+It ensures that exactly one Pod runs on every Node (or on selected Nodes using selectors). Think of it as deploying the same service to every machine in your cluster.
+
+#### 🎯 How DaemonSet Works
+- 🆕 New Node added → DaemonSet automatically schedules its Pod there
+- 🗑️ Node removed → Pod is automatically removed
+- 💀 Pod dies on node → Kubernetes recreates it on the same node
+- 🔄 DaemonSet updated → Pods on ALL nodes are updated automatically
+- 🧹 DaemonSet deleted → Cleans up all Pods it created
+
