@@ -151,7 +151,7 @@ metadata:               # Object identification
 ## 🌐 K8S API
 > The heart of Kubernetes - Everything flows through the API!
 
-Every operation, communication, and state change happens through this unified interface. There are sevral ways to interact with K8S APIs - kubectl, client-library tools, HTTP curl, Helm
+Every operation, communication, and state change happens through this unified interface. There are several ways to interact with K8S APIs - kubectl, client-library tools, HTTP curl, Helm
 
 ```👤 You → 🛠️ kubectl/CLI → 🚪 API Server → 📚 etcd + ⚙️ controllers/workers```
 
@@ -526,3 +526,50 @@ kubectl scale rc <rc-name> --replicas=5
 kubectl delete rc <rc-name>
 kubectl delete rc --all
 ```
+
+## 🚀 Deployment
+- It is a wrapper the ReplicaSets, which in turn manage Pods.
+- It's your blueprint for reliable, scalable applications.
+- If your app pod dies, you need replicas on different nodes. Instead of creating pods manually, define a blueprint and let Kubernetes handle the rest - thats why deployment is needed
+
+### 🔄 How it Works:
+- You define: Desired state ("run 5 replicas of myapp:v2")
+- K8s ensures: Actual state matches desired state
+- Automatic recovery: Pod dies → ReplicaSet recreates it
+- Service integration: Failed pods → Service routes to healthy replicas
+
+### 📝 Deployment Manifest
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+spec:
+  replicas: 3                    # Desired pod count
+  selector:
+    matchLabels:
+      app: web-app              # Select pods to manage
+  template:                     # Pod blueprint
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.20
+        ports:
+        - containerPort: 80
+```
+
+### 🔄 Rolling updates in deployment
+- Zero downtime - New pods ready before old ones terminate
+- Gradual transition - Controlled pace of updates
+- Automatic rollback - Failed updates can be reverted
+- Health checks - Only healthy pods receive traffic
+
+#### 📊 Update Scenario:
+1. 🟢 Current: myapp:v1 → RS1 managing 5 Pods
+2. 🔄 Update: Change image to myapp:v2  
+3. 🆕 Deployment creates RS2 (new version)
+4. ⚖️ Gradually: Scale down RS1, scale up RS2
+5. 💾 RS1 stays (scaled to 0) for rollback
